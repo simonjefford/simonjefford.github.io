@@ -1,16 +1,74 @@
-<html>
-  <head>
-    <title>Has boris quit yet?</title>
-    <!-- Global site tag (gtag.js) - Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-3KJM1ZRQD0"></script>
-    <script>
-     window.dataLayer = window.dataLayer || [];
-     function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Devil tiles</title>
+<style>
+  :root { --bg: #f6f3ef; --ink: #2a1a18; --btn: #ffffffcc; box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #1d1414; --ink: #f3e6e2; --btn: #2a1d1dcc; } }
+  :root[data-theme="dark"] { --bg: #1d1414; --ink: #f3e6e2; --btn: #2a1d1dcc; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); overflow: hidden; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+  .controls { position: fixed; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    display: flex; gap: 8px; align-items: center; }
+  button, select { font: inherit; font-size: 14px; color: var(--ink); background: var(--btn);
+    border: 1px solid color-mix(in srgb, var(--ink) 25%, transparent); border-radius: 8px; padding: 6px 12px; cursor: pointer;
+    backdrop-filter: blur(6px); }
+  button:focus-visible, select:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="controls">
+  <label><select id="scale" aria-label="Tile size">
+    <option value="1">1x</option><option value="2" selected>2x</option><option value="3">3x</option>
+  </select></label>
+  <button id="replay">Replay</button>
+</div>
+<script>
+const SRC = "data:image/png;base64,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";
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const scaleSel = document.getElementById('scale');
+const img = new Image();
+let raf = 0, idx = 0, cols = 0, rows = 0, tw = 0, th = 0, perFrame = 1;
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const DURATION_S = 8;
 
-      gtag('config', 'G-3KJM1ZRQD0');
-    </script>
-  <body>
-    <h1 style="font-size: 40px;">Yes</h1>
-  </body>
+function setup() {
+  cancelAnimationFrame(raf);
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, w, h);
+  const s = Number(scaleSel.value);
+  tw = img.naturalWidth * s; th = img.naturalHeight * s;
+  cols = Math.ceil(w / tw); rows = Math.ceil(h / th);
+  idx = 0;
+  const total = cols * rows;
+  perFrame = reduce ? total : Math.max(1, Math.ceil(total / (DURATION_S * 60)));
+  raf = requestAnimationFrame(step);
+}
+
+function step() {
+  const total = cols * rows;
+  for (let n = 0; n < perFrame && idx < total; n++, idx++) {
+    const r = Math.floor(idx / cols), c = idx % cols;
+    ctx.drawImage(img, c * tw, r * th, tw, th);
+  }
+  if (idx < total) raf = requestAnimationFrame(step);
+}
+
+img.onload = setup;
+img.src = SRC;
+document.getElementById('replay').addEventListener('click', setup);
+scaleSel.addEventListener('change', setup);
+let t; addEventListener('resize', () => { clearTimeout(t); t = setTimeout(setup, 150); });
+</script>
+</body>
 </html>
